@@ -1,26 +1,41 @@
-function extend (target, source) {
-    var a = Object.create(target);
-    Object.keys(source).map(function (prop) {
-        prop in a && (a[prop] = source[prop]);
-    });
-    return a;
-};
-
 /*
-*
+*	Required Parameters -
+*	Array of photo urls starting from the root
+*	ID of an element that the new images will go
+*	
+*	Optional Parameters will be in an object the names are case sensitive
+*	min_size: Int 		- The minimum height of a picture in pixles. defualt: 250px
+*	margin: Int 		- The margin that should be around each of the photos in the gallery. Default: 5px
+*	photo_class: String - The class that each of the photos will have. Default: string
+*	grid_snap: int		- Pixel value of when the photos should resize based on width. Devault: 1
+*	max_img_per_row: int- The maximum number of photos to be in each row. Default: 3
+*	resize: bool		- Boolean value to deterime if the images will be reorganized on resize or not. Default: true
 */
-function Layout(photo_arr, container, min_size, margin){
+function Layout(photo_arr, container, options){
 	this.photos = photo_arr;
-	this.container = document.getElementById(container);
-	this.smallest_height = min_size;
-	this.min_height = min_size;
-	this.margin = typeof margin !== 'undefined' ? margin : 5;
+	
+	//Check if container is an actual ID that exists
+	//Otherwise create a new one
+	if(document.getElementById(container)){
+		this.container = document.getElementById(container);
+	}else{
+		this.container = document.createElement('div');
+		document.body.appendChild (this.container);
+	}
+	
+	//Optional parameters for the function
+	this.smallest_height = options.min_size || 250;
+	this.margin = typeof options.margin !== 'undefined' ? options.margin : 5;
+	this.photo_class_name = options.photo_class || 'scbprojects-com-photo';
+	this.grid_snap = options.grid_snap || 1;
+	this.max_img_per_row = options.max_img_per_row || 3;
+	
 	this.original_aspect_ratio = [];
-	this.photo_class_name = 'scb-com-photo';
-	this.count = 0;
-	this.grid_snap = 1;
-	this.max_img_per_row = 3;
-	window.onresize = this.nice_flow.bind(this);
+	
+	
+	if(typeof options.resize === 'undefined' || options.resize){
+		window.onresize = this.nice_flow.bind(this);
+	}
 	
 	this.init();
 }
@@ -28,9 +43,11 @@ function Layout(photo_arr, container, min_size, margin){
 Layout.prototype = {
 
 	init: function(){
-	//Add CSS for the elements that we are creating
-		var css = "."+this.photo_class_name+"{	float: left; background-repeat: no-repeat; background-position: center; background-size: cover;}",
-		head = document.head || document.getElementsByTagName('head')[0],
+		//Add CSS for the elements that we are creating
+		var css = "."+this.photo_class_name+"{	float: left; margin-left: "+this.margin+"px; background-repeat: no-repeat; background-position: center; background-size: cover; cursor: pointer;}";
+		css += 'dialog::backdrop{ background-color: rgba(0, 0, 0, 0.7); }';
+		
+		var head = document.head || document.getElementsByTagName('head')[0],
 		style = document.createElement('style');
 
 		style.type = 'text/css';
@@ -56,12 +73,12 @@ Layout.prototype = {
 	*	Checks to see if all the photos have been loaded if so calls the all_loaded function
 	*/
 	init_photo: function(img){
-		++this.count;
 		var oar = img.width / img.height;				//Calculate aspect ratio	
 		
 		var new_el = document.createElement("div");
 		new_el.className = this.photo_class_name;
 		new_el.style.backgroundImage = 'url('+img.src+')';
+		new_el.onclick = this.show_large;
 		this.set_height_and_width(new_el, this.smallest_height, this.smallest_height * oar)
 		this.container.appendChild(new_el);
 		this.original_aspect_ratio.push([oar, new_el]);
@@ -108,14 +125,14 @@ Layout.prototype = {
 
 				//grow current row to fit the remaining space and start a new row
 				var left = 0;				
-				
+				var height = min_height;
 				for (var q = current_row_start_index; q < i+1; q++){
 					var el = this.original_aspect_ratio[q][1];		//current element to adjust width
 					var ar = this.original_aspect_ratio[q][0];
 					
 					//If there is only one element left in the final row
 					//Set height to the min_height and adjust the width to match.
-					if (q === this.original_aspect_ratio.length - 1){
+					if (current_row_start_index === q && q === this.original_aspect_ratio.length - 1){
 						this.set_height_and_width(el, min_height, min_height * ar);
 						this.set_transform(el, left, row_top);
 						
@@ -123,7 +140,7 @@ Layout.prototype = {
 						//Get a percentage of the total aspect ratio then use that percentage to determine how much of the unsued space this element gets
 						var new_width = el.offsetWidth + (extra_width * (ar / aspect_total));
 						//Calculate new height
-						var height = new_width / ar;
+						height = new_width / ar;
 						this.set_height_and_width(el, height, new_width);
 						el.style.position = 'absolute';
 						this.set_transform(el, left, row_top);
@@ -158,25 +175,38 @@ Layout.prototype = {
 		element.style.msTransform = transfromString;
 		element.style.OTransform = transfromString;
 		element.style.transform = transfromString;
+	},
+	
+	show_large: function(){
+		var dialog = document.createElement('dialog');
+		var ar = this.offsetWidth / this.offsetHeight;
+		document.body.appendChild(dialog);
+		dialog.style.backgroundImage = this.style.backgroundImage;
+		dialog.style.backgroundRepeat = 'no-repeat';
+		dialog.style.backgroundPosition = 'center'; 
+		dialog.style.backgroundSize = 'cover';
+		dialog.style.padding = 0;
+		dialog.style.border = 'none';
+		
+		//Height and width of browser
+		var w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+		var h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+		h -= 5;
+		w -= 25;
+	
+		//Set to full height
+		dialog.style.width = h * ar;
+		dialog.style.height = h;
+		
+		dialog.showModal();
+		//Check if its too wide to fit and adjust
+		if (w < dialog.offsetWidth){
+			dialog.style.width = w;
+			dialog.style.height = w / ar;
+			dialog.close();
+			dialog.showModal();
+		}
+		console.log(dialog, dialog.offsetWidth);
+		dialog.onclick = function(){ this.close(); document.body.removeChild(this);	};
 	}
 }
-
-var array = ['https://farm6.staticflickr.com/5775/21495115833_7b95275c3e_c',
-"https://farm6.staticflickr.com/5775/21929641248_871715d790_c.jpg,",
-"https://farm6.staticflickr.com/5699/22127358791_0359bc7726_c.jpg",
-"https://farm1.staticflickr.com/603/22116627215_75cd465a50_c.jpg",
-"https://farm1.staticflickr.com/689/22125157911_0648c89963_c.jpg",
-"https://farm6.staticflickr.com/5821/21490634904_c72f156977_c.jpg",
-"https://farm6.staticflickr.com/5679/21223936974_cf838e5e43_c.jpg",
-"https://farm6.staticflickr.com/5632/21856300911_5bebf9e321_c.jpg",
-"https://farm6.staticflickr.com/5782/21856365451_a8e8bcaa9f_c.jpg",
-"https://farm1.staticflickr.com/589/21659813329_f04267c8a4_c.jpg",
-"https://farm1.staticflickr.com/730/21659790059_de54217a3e_c.jpg",
-"https://farm1.staticflickr.com/619/21822313915_e1fcf0eb98_c.jpg",
-"https://farm1.staticflickr.com/625/21635422669_35b7731bb2_c.jpg",
-"https://farm1.staticflickr.com/646/21199537034_6e7f37287c_c.jpg",
-"https://farm1.staticflickr.com/744/21201203283_83e1a0a65f_c.jpg",
-"https://farm6.staticflickr.com/5778/21201192423_2914190e84_c.jpg",
-"https://farm1.staticflickr.com/635/21813329425_4eff08e21b_c.jpg",
-"https://farm1.staticflickr.com/600/21190412624_660b5e349c_c.jpg"]		
-var output = new Layout(array, 'photos_page', 300);

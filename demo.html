@@ -1,0 +1,27 @@
+<html>
+<head>
+	<title>Photo Gallery Demo</title>
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<!--	<link href="http://www.blog.scbprojects.com/master.css" rel="stylesheet" type="text/css" />		-->
+	<script src = "picture_layout.js"></script>
+</head>
+<main id = "photo_view">
+</main>
+<script>
+var array = ["http://lorempixel.com/600/300",
+"http://lorempixel.com/250/800",
+"http://lorempixel.com/650/200",
+"http://lorempixel.com/210/1000",
+"http://lorempixel.com/710/230",
+"http://lorempixel.com/260/230",
+"http://lorempixel.com/410/830",
+"http://lorempixel.com/500/700",
+"http://lorempixel.com/450/250",
+"http://lorempixel.com/600/200",
+"http://lorempixel.com/210/220",
+"http://lorempixel.com/210/230",
+"http://lorempixel.com/260/230",
+"http://lorempixel.com/710/300"];
+var output = new Layout(array, 'phto_view', {min_size: 300});
+</script>
+</html>
