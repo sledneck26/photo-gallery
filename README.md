@@ -14,5 +14,9 @@ Options include
 
 
 Example:
-var array = ["http://lorempixel.com/600/300","http://lorempixel.com/250/800","http://lorempixel.com/650/200","http://lorempixel.com/210/1000","http://lorempixel.com/710/230"];
-var output = new Layout(array, 'photo_view', {min_size: 300});
+
+var output = new Layout(["http://lorempixel.com/600/300",
+"http://lorempixel.com/250/800",
+"http://lorempixel.com/650/200",
+"http://lorempixel.com/210/1000",
+"http://lorempixel.com/710/230"], 'photo_view', {min_size: 300});
